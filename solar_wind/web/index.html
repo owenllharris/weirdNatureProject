@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Weather LED Matrix Simulator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>🌌 Space Weather LED Matrix Simulator</h1>
+        <p class="subtitle">Real-time solar wind visualization • 32×32 LED Matrix</p>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+
+        <!-- Left Panel: LED Matrix Display -->
+        <div class="led-panel">
+            <div class="panel-header">
+                <h2>LED Matrix Display</h2>
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- LED Matrix Canvas -->
+            <div class="led-container">
+                <canvas id="ledMatrix" width="800" height="800"></canvas>
+            </div>
+
+            <!-- Pattern Controls -->
+            <div class="controls">
+                <div class="control-group">
+                    <label for="patternSelect">Pattern:</label>
+                    <select id="patternSelect">
+                        <option value="solid">Solid Fill</option>
+                        <option value="wave">Wave Flow</option>
+                        <option value="pulse">Pulsing</option>
+                        <option value="sparkle">Aurora Sparkle</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="speedSlider">Animation Speed:</label>
+                    <input type="range" id="speedSlider" min="0.1" max="2" step="0.1" value="1">
+                    <span id="speedValue">1.0x</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Data Display -->
+        <div class="info-panel">
+
+            <!-- Current Color Display -->
+            <div class="info-section color-display">
+                <h3>Current Color</h3>
+                <div class="color-preview" id="colorPreview"></div>
+                <div class="color-values">
+                    <div class="color-value">
+                        <span class="label">RGB:</span>
+                        <span id="rgbValue">--, --, --</span>
+                    </div>
+                    <div class="color-value">
+                        <span class="label">HSV:</span>
+                        <span id="hsvValue">--, --, --</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Space Weather Data -->
+            <div class="info-section">
+                <h3>🌞 Solar Wind Data</h3>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <span class="data-label">BZ (Magnetic Field):</span>
+                        <span class="data-value" id="bzValue">-- nT</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Speed:</span>
+                        <span class="data-value" id="speedValue">-- km/s</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Density:</span>
+                        <span class="data-value" id="densityValue">-- /cm³</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="data-label">Temperature:</span>
+                        <span class="data-value" id="temperatureValue">-- K</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aurora Probability -->
+            <div class="info-section aurora-section">
+                <h3>Aurora Probability</h3>
+                <div class="aurora-probability" id="auroraProbability">
+                    <div class="probability-bar">
+                        <div class="probability-fill" id="probabilityFill"></div>
+                    </div>
+                    <div class="probability-text" id="probabilityText">Unknown</div>
+                </div>
+            </div>
+
+            <!-- BZ History Chart -->
+            <div class="info-section">
+                <h3>BZ History (Last 30 min)</h3>
+                <canvas id="bzChart" width="300" height="150"></canvas>
+            </div>
+
+            <!-- Color Meaning Guide -->
+            <div class="info-section guide-section">
+                <h3>Color Guide</h3>
+                <div class="color-guide">
+                    <div class="guide-item">
+                        <div class="guide-color" style="background: rgb(138, 43, 226);"></div>
+                        <div class="guide-text">
+                            <strong>Purple/Violet</strong>
+                            <span>Strong negative BZ - Aurora conditions!</span>
+                        </div>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-color" style="background: rgb(0, 150, 255);"></div>
+                        <div class="guide-text">
+                            <strong>Blue/Cyan</strong>
+                            <span>Moderate negative BZ - Possible aurora</span>
+                        </div>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-color" style="background: rgb(0, 255, 150);"></div>
+                        <div class="guide-text">
+                            <strong>Green/Cyan</strong>
+                            <span>Neutral BZ - Transitional</span>
+                        </div>
+                    </div>
+                    <div class="guide-item">
+                        <div class="guide-color" style="background: rgb(255, 200, 0);"></div>
+                        <div class="guide-text">
+                            <strong>Yellow/Orange</strong>
+                            <span>Positive BZ - Quiet conditions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Last Update -->
+            <div class="info-section">
+                <div class="last-update">
+                    <span class="update-label">Last Update:</span>
+                    <span id="lastUpdate">Never</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>Data from NOAA Space Weather Prediction Center • Simulating 32×32 LED Matrix Installation</p>
+    </footer>
+
+    <script src="simulator.js"></script>
+</body>
+</html>
