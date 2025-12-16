@@ -294,14 +294,28 @@
                     <div class="control-group">
                         <label for="pattern">Animation Pattern</label>
                         <select id="pattern">
-                            <option value="flowing_waves" selected>🌊 Flowing Waves</option>
-                            <option value="aurora_bands">🌌 Aurora Bands</option>
-                            <option value="fire_column">🔥 Fire Column</option>
-                            <option value="breathing">💨 Breathing</option>
-                            <option value="plasma_storm">⚡ Plasma Storm</option>
-                            <option value="solar_flare">☀️ Solar Flare</option>
-                            <option value="rainbow_river">🌈 Rainbow River</option>
-                            <option value="meteor_shower">💫 Meteor Shower</option>
+                            <optgroup label="🌬️ Wind Metaphors (Speed-Reactive)">
+                                <option value="gentle_breeze" selected>Gentle Breeze</option>
+                                <option value="desert_wind">Desert Wind Dunes</option>
+                                <option value="solar_wind_stream">Solar Wind Stream</option>
+                            </optgroup>
+                            <optgroup label="🌊 Ocean Metaphors">
+                                <option value="ocean_waves">Ocean Waves</option>
+                                <option value="deep_current">Deep Current</option>
+                                <option value="tide_flow">Tidal Flow</option>
+                            </optgroup>
+                            <optgroup label="🔥 Energy Metaphors">
+                                <option value="breathing_earth">Breathing Earth</option>
+                                <option value="ember_glow">Ember Glow</option>
+                            </optgroup>
+                            <optgroup label="✨ Original Patterns">
+                                <option value="flowing_waves">Flowing Waves</option>
+                                <option value="aurora_bands">Aurora Bands</option>
+                                <option value="fire_column">Fire Column</option>
+                                <option value="plasma_storm">Plasma Storm</option>
+                                <option value="solar_flare">Solar Flare</option>
+                                <option value="meteor_shower">Meteor Shower</option>
+                            </optgroup>
                         </select>
                     </div>
 
@@ -316,12 +330,15 @@
                 </div>
 
                 <div class="info-box">
-                    <h4>Color Guide</h4>
+                    <h4>🌌 How to Read the Patterns</h4>
                     <p>
-                        <strong style="color: #a78bfa;">Purple/Blue</strong> = Aurora conditions! (BZ southward)<br>
-                        <strong style="color: #60a5fa;">Cyan</strong> = Transitional<br>
-                        <strong style="color: #fbbf24;">Yellow/Orange</strong> = Quiet conditions (BZ northward)<br>
-                        <em>Colors are warmed and enhanced for visual beauty!</em>
+                        <strong>Speed</strong> = How fast the pattern moves<br>
+                        • Slow drift = Low solar wind speed (calm)<br>
+                        • Rapid flow = High solar wind speed (active!)<br><br>
+                        <strong>Colors</strong> = Magnetic field conditions<br>
+                        <strong style="color: #a78bfa;">Purple/Magenta</strong> = Aurora conditions! (BZ southward)<br>
+                        <strong style="color: #fbbf24;">Orange/Gold</strong> = Quiet conditions (BZ northward)<br><br>
+                        <em>Wind & Ocean patterns react directly to solar wind speed - watch how fast things move!</em>
                     </p>
                 </div>
             </div>
@@ -419,7 +436,7 @@
 
         // State
         let dataMode = 'live';
-        let currentPattern = 'flowing_waves';
+        let currentPattern = 'gentle_breeze';
         let animationSpeed = 1.0;
         let frame = 0;
         let currentColor = { r: 255, g: 120, b: 80 };
@@ -892,19 +909,239 @@
             }
         }
 
+        // ========================================================================
+        // NEW PATTERNS: WIND & OCEAN METAPHORS (Speed-Reactive, Warm & Hypnotic)
+        // ========================================================================
+
+        // Get speed multiplier from current data (for speed-reactive patterns)
+        function getSpeedMultiplier() {
+            if (!currentData) return 0.5;
+            const speedNorm = currentData.lighting.flow_rate; // 0-1
+            return 0.2 + speedNorm * 2.5; // Range: 0.2x (slow) to 2.7x (fast) - VERY noticeable!
+        }
+
+        // WIND PATTERN 1: Gentle Breeze - Horizontal drift (speed = wind speed)
+        function drawGentleBreeze() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Horizontal drift with gentle vertical undulation
+                    const drift = (x + frame * speedMult * 0.15) % MATRIX_SIZE;
+                    const wave = Math.sin(drift * 0.5 + y * 0.3) * 2;
+
+                    // Soft breathing brightness
+                    const breathe = Math.sin(frame * 0.05 * speedMult) * 0.15 + 0.85;
+                    const brightness = (0.6 + Math.sin((drift + wave) * 0.4) * 0.4) * breathe;
+
+                    // Warm amber/gold tones
+                    const warmColor = {
+                        r: Math.min(255, currentColor.r * 1.1),
+                        g: Math.min(255, currentColor.g * 0.95),
+                        b: currentColor.b * 0.7
+                    };
+
+                    drawLED(x, y, warmColor.r, warmColor.g, warmColor.b, brightness);
+                }
+            }
+        }
+
+        // WIND PATTERN 2: Desert Wind - Sand dune ripples (speed = wind strength)
+        function drawDesertWind() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Diagonal dune ripples moving with the wind
+                    const dunePattern = Math.sin((x + y) * 0.4 - frame * speedMult * 0.2);
+                    const ripple1 = Math.sin(x * 0.6 - frame * speedMult * 0.15 + y * 0.1);
+                    const ripple2 = Math.sin(y * 0.5 - frame * speedMult * 0.1) * 0.3;
+
+                    const combined = (dunePattern + ripple1 + ripple2) / 2.3;
+                    const brightness = 0.5 + combined * 0.6;
+
+                    // Warm sandy colors
+                    const sandy = {
+                        r: Math.min(255, currentColor.r * 1.15),
+                        g: Math.min(255, currentColor.g * 0.9),
+                        b: currentColor.b * 0.6
+                    };
+
+                    drawLED(x, y, sandy.r, sandy.g, sandy.b, brightness);
+                }
+            }
+        }
+
+        // WIND PATTERN 3: Solar Wind Stream - Particle streams (literal!)
+        function drawSolarWindStream() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Fast horizontal streaming with turbulence
+                    const streamPos = (x - frame * speedMult * 0.25) % 10;
+                    const turbulence = Math.sin(y * 0.7 + frame * speedMult * 0.1) * 1.5;
+                    const stream = Math.sin((streamPos + turbulence) * 0.8) * 0.5 + 0.5;
+
+                    // Speed trails - more visible at high speed
+                    const trail = Math.max(0, 1 - Math.abs(streamPos - 5) / 3) * speedMult * 0.4;
+
+                    const brightness = 0.4 + stream * 0.5 + trail;
+
+                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b, brightness);
+                }
+            }
+        }
+
+        // OCEAN PATTERN 1: Ocean Waves - Rolling swells (speed = wave speed)
+        function drawOceanWaves() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Rolling wave motion
+                    const wave1 = Math.sin(y * 0.3 - frame * speedMult * 0.12 + Math.sin(x * 0.2) * 2);
+                    const wave2 = Math.sin((y + x * 0.3) * 0.25 - frame * speedMult * 0.08) * 0.5;
+                    const foam = Math.sin(x * 0.8 + frame * speedMult * 0.2) * 0.2; // Whitecaps at high speed
+
+                    const brightness = 0.5 + (wave1 + wave2) * 0.4 + foam * speedMult * 0.3;
+
+                    // Deep ocean colors with warm undertones
+                    const oceanColor = {
+                        r: currentColor.r * 0.85,
+                        g: Math.min(255, currentColor.g * 1.05),
+                        b: Math.min(255, currentColor.b * 1.15)
+                    };
+
+                    drawLED(x, y, oceanColor.r, oceanColor.g, oceanColor.b, brightness);
+                }
+            }
+        }
+
+        // OCEAN PATTERN 2: Deep Current - Underwater flow
+        function drawDeepCurrent() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Swirling current patterns
+                    const angle = Math.atan2(y - MATRIX_SIZE / 2, x - MATRIX_SIZE / 2);
+                    const radius = Math.sqrt(Math.pow(x - MATRIX_SIZE / 2, 2) + Math.pow(y - MATRIX_SIZE / 2, 2));
+
+                    const swirl = Math.sin(angle * 3 + radius * 0.2 - frame * speedMult * 0.1);
+                    const flow = Math.sin(x * 0.2 + y * 0.15 - frame * speedMult * 0.15);
+
+                    const brightness = 0.6 + (swirl + flow) * 0.4;
+
+                    drawLED(x, y, currentColor.r * 0.9, currentColor.g, currentColor.b * 1.1, brightness);
+                }
+            }
+        }
+
+        // OCEAN PATTERN 3: Tidal Flow - Rhythmic ebb and flow
+        function drawTideFlow() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Tide coming in and out
+                    const tide = Math.sin(frame * speedMult * 0.08) * MATRIX_SIZE * 0.4;
+                    const waterLevel = MATRIX_SIZE / 2 + tide;
+
+                    // Distance from water line
+                    const distFromWater = Math.abs(y - waterLevel);
+                    const waveFront = Math.sin(x * 0.5 - frame * speedMult * 0.2) * 1.5;
+
+                    const brightness = 1 - (distFromWater - waveFront) / (MATRIX_SIZE * 0.3);
+                    const clampedBrightness = Math.max(0.3, Math.min(1.2, brightness));
+
+                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b, clampedBrightness);
+                }
+            }
+        }
+
+        // ENERGY PATTERN 1: Breathing Earth - Pulse (speed = breath rate)
+        function drawBreathingEarth() {
+            const speedMult = getSpeedMultiplier();
+
+            // Breathing rate changes with solar wind speed!
+            const breath = Math.sin(frame * speedMult * 0.12);
+            const pulse = 0.45 + breath * 0.55;
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Radial breathing from center
+                    const dx = x - MATRIX_SIZE / 2;
+                    const dy = y - MATRIX_SIZE / 2;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // Ripple effect
+                    const ripple = Math.sin(dist * 0.5 - frame * speedMult * 0.15) * 0.2;
+
+                    const brightness = pulse + ripple;
+
+                    // Warm living glow
+                    const livingColor = {
+                        r: Math.min(255, currentColor.r * 1.1),
+                        g: Math.min(255, currentColor.g * 0.95),
+                        b: currentColor.b * 0.8
+                    };
+
+                    drawLED(x, y, livingColor.r, livingColor.g, livingColor.b, brightness);
+                }
+            }
+        }
+
+        // ENERGY PATTERN 2: Ember Glow - Pulsing coals (speed = intensity)
+        function drawEmberGlow() {
+            const speedMult = getSpeedMultiplier();
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Individual "embers" pulsing at different rates
+                    const emberPhase = (x * 7 + y * 11) % 20;
+                    const pulse = Math.sin((frame * speedMult * 0.1) + emberPhase) * 0.3 + 0.7;
+
+                    // Random ember intensity variation
+                    const emberPattern = Math.sin(x * 0.8 + y * 0.6) * 0.3;
+
+                    const brightness = pulse + emberPattern;
+
+                    // Hot ember colors - reds and oranges
+                    const emberColor = {
+                        r: Math.min(255, currentColor.r * 1.2),
+                        g: currentColor.g * 0.7,
+                        b: currentColor.b * 0.5
+                    };
+
+                    drawLED(x, y, emberColor.r, emberColor.g, emberColor.b, brightness);
+                }
+            }
+        }
+
         // Animation loop
         function animate() {
             ctx.fillStyle = '#0a0a0a';
             ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
             switch (currentPattern) {
+                // Wind metaphors
+                case 'gentle_breeze': drawGentleBreeze(); break;
+                case 'desert_wind': drawDesertWind(); break;
+                case 'solar_wind_stream': drawSolarWindStream(); break;
+                // Ocean metaphors
+                case 'ocean_waves': drawOceanWaves(); break;
+                case 'deep_current': drawDeepCurrent(); break;
+                case 'tide_flow': drawTideFlow(); break;
+                // Energy metaphors
+                case 'breathing_earth': drawBreathingEarth(); break;
+                case 'ember_glow': drawEmberGlow(); break;
+                // Original patterns
                 case 'flowing_waves': drawFlowingWaves(); break;
                 case 'aurora_bands': drawAuroraBands(); break;
                 case 'fire_column': drawFireColumn(); break;
-                case 'breathing': drawBreathing(); break;
                 case 'plasma_storm': drawPlasmaStorm(); break;
                 case 'solar_flare': drawSolarFlare(); break;
-                case 'rainbow_river': drawRainbowRiver(); break;
                 case 'meteor_shower': drawMeteorShower(); break;
             }
 
