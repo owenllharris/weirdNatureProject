@@ -294,16 +294,20 @@
                     <div class="control-group">
                         <label for="pattern">Animation Pattern</label>
                         <select id="pattern">
-                            <option value="solid">Solid Fill</option>
-                            <option value="wave" selected>Wave Flow</option>
-                            <option value="pulse">Pulse</option>
-                            <option value="sparkle">Aurora Sparkle</option>
+                            <option value="flowing_waves" selected>🌊 Flowing Waves</option>
+                            <option value="aurora_bands">🌌 Aurora Bands</option>
+                            <option value="fire_column">🔥 Fire Column</option>
+                            <option value="breathing">💨 Breathing</option>
+                            <option value="plasma_storm">⚡ Plasma Storm</option>
+                            <option value="solar_flare">☀️ Solar Flare</option>
+                            <option value="rainbow_river">🌈 Rainbow River</option>
+                            <option value="meteor_shower">💫 Meteor Shower</option>
                         </select>
                     </div>
 
                     <div class="control-group">
                         <label for="speed">Animation Speed: <span id="speedValue">1.0</span>x</label>
-                        <input type="range" id="speed" min="0.1" max="2" step="0.1" value="1.0">
+                        <input type="range" id="speed" min="0.1" max="3" step="0.1" value="1.0">
                     </div>
 
                     <div class="control-group">
@@ -316,7 +320,8 @@
                     <p>
                         <strong style="color: #a78bfa;">Purple/Blue</strong> = Aurora conditions! (BZ southward)<br>
                         <strong style="color: #60a5fa;">Cyan</strong> = Transitional<br>
-                        <strong style="color: #fbbf24;">Yellow/Orange</strong> = Quiet conditions (BZ northward)
+                        <strong style="color: #fbbf24;">Yellow/Orange</strong> = Quiet conditions (BZ northward)<br>
+                        <em>Colors are warmed and enhanced for visual beauty!</em>
                     </p>
                 </div>
             </div>
@@ -414,13 +419,16 @@
 
         // State
         let dataMode = 'live';
-        let currentPattern = 'wave';
+        let currentPattern = 'flowing_waves';
         let animationSpeed = 1.0;
         let frame = 0;
-        let currentColor = { r: 128, g: 0, b: 255 };
+        let currentColor = { r: 255, g: 120, b: 80 };
         let currentData = null;
         let updateInterval = null;
         let nextUpdateTime = null;
+
+        // Particle system for meteor shower
+        let meteors = [];
 
         // Fetch NOAA data
         async function fetchNOAAData() {
@@ -439,7 +447,6 @@
                 const plasmaData = await plasmaResponse.json();
                 const magData = await magResponse.json();
 
-                // Get latest data point
                 const latestPlasma = plasmaData[plasmaData.length - 1];
                 const latestMag = magData[magData.length - 1];
 
@@ -486,22 +493,24 @@
             };
         }
 
-        // Calculate lighting from raw data
+        // Calculate lighting with WARM, BEAUTIFUL colors
         function calculateLighting(raw) {
             const bzNorm = Math.max(0, Math.min(1, (raw.bz + 20) / 40));
 
             let hue;
             if (bzNorm < 0.5) {
-                hue = 270 - (bzNorm * 180);
+                // AURORA colors - beautiful purples, magentas, blues with warm tints
+                hue = 280 - (bzNorm * 100); // 280° to 230° (purple to pink)
             } else {
-                hue = 180 - ((bzNorm - 0.5) * 300);
+                // CALM colors - warm oranges, golds, reds
+                hue = 30 - ((bzNorm - 0.5) * 50); // 30° to 5° (orange to red-orange)
             }
 
             const speedNorm = Math.max(0, Math.min(1, (raw.speed - 300) / 400));
-            const brightness = 20 + speedNorm * 80;
+            const brightness = 50 + speedNorm * 50; // Much brighter! 50-100%
 
             const densityNorm = Math.max(0, Math.min(1, (raw.density - 1) / 29));
-            const saturation = 40 + densityNorm * 60;
+            const saturation = 70 + densityNorm * 30; // Rich, saturated colors 70-100%
 
             const rgb = hsvToRgb(hue / 360, saturation / 100, brightness / 100);
 
@@ -539,6 +548,15 @@
             return { r, g, b };
         }
 
+        // Add warm color variation
+        function warmColorVariation(baseColor, variation = 0.2) {
+            return {
+                r: Math.min(255, baseColor.r * (1 + variation * Math.random())),
+                g: Math.min(255, baseColor.g * (1 - variation * 0.3 * Math.random())),
+                b: Math.min(255, baseColor.b * (1 - variation * 0.5 * Math.random()))
+            };
+        }
+
         // Update status indicator
         function updateStatus(text, type) {
             const statusEl = document.getElementById('dataStatus');
@@ -553,7 +571,6 @@
             if (dataMode === 'live') {
                 raw = await fetchNOAAData();
                 if (!raw) {
-                    // Fallback to simulated if live fetch fails
                     raw = generateSimulatedData();
                 }
             } else {
@@ -566,8 +583,7 @@
             currentColor = lighting.rgb;
             updateDataDisplay();
 
-            // Schedule next update
-            nextUpdateTime = Date.now() + 60000; // 60 seconds
+            nextUpdateTime = Date.now() + 60000;
         }
 
         // Update UI displays
@@ -599,7 +615,6 @@
             auroraFill.style.background = auroraProb.color;
             auroraFill.textContent = `${auroraProb.percentage}%`;
 
-            // Timestamps
             const dataTime = new Date(raw.timestamp);
             document.getElementById('dataTimestamp').textContent = dataTime.toLocaleString();
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
@@ -635,77 +650,244 @@
             return { percentage, text, color };
         }
 
-        // Draw LED
+        // Draw LED with enhanced glow
         function drawLED(x, y, r, g, b, brightness = 1.0) {
             const centerX = x * LED_SIZE + LED_SIZE / 2;
             const centerY = y * LED_SIZE + LED_SIZE / 2;
 
-            const glowGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, LED_RADIUS * 1.5);
-            glowGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.6 * brightness})`);
-            glowGradient.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${0.3 * brightness})`);
+            // Much stronger outer glow
+            const glowGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, LED_RADIUS * 2);
+            glowGradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${0.9 * brightness})`);
+            glowGradient.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, ${0.5 * brightness})`);
             glowGradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
             ctx.beginPath();
-            ctx.arc(centerX, centerY, LED_RADIUS * 1.5, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, LED_RADIUS * 2, 0, Math.PI * 2);
             ctx.fillStyle = glowGradient;
             ctx.fill();
 
+            // Bright LED body
             const bodyGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, LED_RADIUS);
-            bodyGradient.addColorStop(0, `rgb(${Math.min(255, r * 1.2)}, ${Math.min(255, g * 1.2)}, ${Math.min(255, b * 1.2)})`);
+            bodyGradient.addColorStop(0, `rgb(${Math.min(255, r * 1.3)}, ${Math.min(255, g * 1.3)}, ${Math.min(255, b * 1.3)})`);
             bodyGradient.addColorStop(1, `rgb(${r}, ${g}, ${b})`);
 
             ctx.beginPath();
-            ctx.arc(centerX, centerY, LED_RADIUS * 0.9, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, LED_RADIUS * 0.95, 0, Math.PI * 2);
             ctx.fillStyle = bodyGradient;
             ctx.fill();
 
-            if (brightness > 0.3) {
+            // Bright highlight
+            if (brightness > 0.2) {
                 ctx.beginPath();
-                ctx.arc(centerX - LED_RADIUS * 0.3, centerY - LED_RADIUS * 0.3, LED_RADIUS * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.4 * brightness})`;
+                ctx.arc(centerX - LED_RADIUS * 0.3, centerY - LED_RADIUS * 0.3, LED_RADIUS * 0.4, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.6 * brightness})`;
                 ctx.fill();
             }
         }
 
-        // Pattern functions
-        function drawSolid() {
+        // PATTERN 1: Flowing Waves - DRAMATIC horizontal waves
+        function drawFlowingWaves() {
             for (let y = 0; y < MATRIX_SIZE; y++) {
                 for (let x = 0; x < MATRIX_SIZE; x++) {
-                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b);
+                    // Multiple overlapping waves for complexity
+                    const wave1 = Math.sin((x * 0.4 + frame * 0.3) + y * 0.2);
+                    const wave2 = Math.sin((y * 0.3 - frame * 0.2) + x * 0.15);
+                    const combined = (wave1 + wave2) / 2;
+
+                    // MUCH more dramatic brightness variation
+                    const brightness = 0.3 + (combined + 1) * 0.65; // 0.3 to 1.6!
+
+                    // Warm color variation
+                    const colorVar = warmColorVariation(currentColor, 0.3);
+                    drawLED(x, y, colorVar.r, colorVar.g, colorVar.b, brightness);
                 }
             }
         }
 
-        function drawWave() {
+        // PATTERN 2: Aurora Bands - Vertical flowing curtains
+        function drawAuroraBands() {
             for (let y = 0; y < MATRIX_SIZE; y++) {
                 for (let x = 0; x < MATRIX_SIZE; x++) {
-                    const wave = Math.sin((x + frame * 0.5) * 0.3) * Math.sin((y + frame * 0.3) * 0.2);
-                    const brightness = 0.5 + wave * 0.5;
-                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b, brightness);
+                    // Flowing vertical curtains
+                    const curtain = Math.sin((x * 0.8 + Math.sin(y * 0.2 + frame * 0.1) * 3) + frame * 0.2);
+                    const shimmer = Math.sin(y * 0.5 - frame * 0.3) * 0.3;
+
+                    const brightness = 0.4 + (curtain + shimmer + 2) * 0.5;
+
+                    // Add green/cyan tint for aurora effect
+                    const r = currentColor.r * 0.8;
+                    const g = currentColor.g * 1.2;
+                    const b = currentColor.b * 1.1;
+
+                    drawLED(x, y, r, g, b, brightness);
                 }
             }
         }
 
-        function drawPulse() {
-            const pulse = (Math.sin(frame * 0.1) + 1) * 0.5;
+        // PATTERN 3: Fire Column - Rising flames
+        function drawFireColumn() {
             for (let y = 0; y < MATRIX_SIZE; y++) {
                 for (let x = 0; x < MATRIX_SIZE; x++) {
-                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b, pulse);
+                    // Rising turbulent motion
+                    const turbulence = Math.sin(x * 0.5 + frame * 0.2) * Math.cos(y * 0.3 - frame * 0.4);
+                    const rise = (MATRIX_SIZE - y) / MATRIX_SIZE; // Brighter at bottom
+                    const flicker = Math.sin(frame * 0.5 + x * 0.7) * 0.3;
+
+                    const brightness = (rise * 0.6 + turbulence * 0.3 + flicker + 0.3);
+
+                    // Warm orange/yellow fire colors
+                    const warmth = (MATRIX_SIZE - y) / MATRIX_SIZE;
+                    const r = Math.min(255, currentColor.r * (1 + warmth * 0.3));
+                    const g = currentColor.g * (0.7 + warmth * 0.3);
+                    const b = currentColor.b * 0.5;
+
+                    drawLED(x, y, r, g, b, brightness);
                 }
             }
         }
 
-        function drawSparkle() {
+        // PATTERN 4: Breathing - Whole matrix pulses
+        function drawBreathing() {
+            // Smooth breathing with multiple harmonics
+            const breath1 = Math.sin(frame * 0.08);
+            const breath2 = Math.sin(frame * 0.15) * 0.3;
+            const pulse = 0.4 + (breath1 + breath2 + 1) * 0.5; // 0.4 to 1.8
+
             for (let y = 0; y < MATRIX_SIZE; y++) {
                 for (let x = 0; x < MATRIX_SIZE; x++) {
-                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b, 0.5);
+                    // Add subtle radial variation from center
+                    const dx = x - MATRIX_SIZE / 2;
+                    const dy = y - MATRIX_SIZE / 2;
+                    const dist = Math.sqrt(dx * dx + dy * dy) / (MATRIX_SIZE / 2);
+                    const radial = 1 - dist * 0.2;
+
+                    const brightness = pulse * radial;
+                    const colorVar = warmColorVariation(currentColor, 0.15);
+                    drawLED(x, y, colorVar.r, colorVar.g, colorVar.b, brightness);
                 }
             }
-            for (let i = 0; i < 20; i++) {
-                if (Math.random() < 0.3) {
-                    const x = Math.floor(Math.random() * MATRIX_SIZE);
-                    const y = Math.floor(Math.random() * MATRIX_SIZE);
-                    drawLED(x, y, 255, 255, 255, Math.random());
+        }
+
+        // PATTERN 5: Plasma Storm - Chaotic energy
+        function drawPlasmaStorm() {
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Multiple overlapping plasma frequencies
+                    const plasma1 = Math.sin(x * 0.2 + frame * 0.15);
+                    const plasma2 = Math.cos(y * 0.25 + frame * 0.12);
+                    const plasma3 = Math.sin((x + y) * 0.15 - frame * 0.1);
+                    const combined = (plasma1 + plasma2 + plasma3) / 3;
+
+                    const brightness = 0.5 + combined * 0.8;
+
+                    // Shift colors based on position
+                    const hueShift = (x + y) * 2;
+                    const colorVar = warmColorVariation(currentColor, 0.4);
+                    const r = Math.min(255, colorVar.r + Math.sin(hueShift) * 30);
+                    const g = Math.min(255, colorVar.g + Math.cos(hueShift) * 30);
+                    const b = Math.min(255, colorVar.b + Math.sin(hueShift * 1.5) * 30);
+
+                    drawLED(x, y, r, g, b, brightness);
+                }
+            }
+        }
+
+        // PATTERN 6: Solar Flare - Explosive burst from center
+        function drawSolarFlare() {
+            const centerX = MATRIX_SIZE / 2;
+            const centerY = MATRIX_SIZE / 2;
+
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    const dx = x - centerX;
+                    const dy = y - centerY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const angle = Math.atan2(dy, dx);
+
+                    // Pulsing explosion from center
+                    const burst = Math.sin(dist * 0.5 - frame * 0.3) * 0.5 + 0.5;
+                    const rays = Math.sin(angle * 8 + frame * 0.2) * 0.3 + 0.7;
+
+                    const brightness = burst * rays * (1 - dist / (MATRIX_SIZE * 0.7));
+
+                    const colorVar = warmColorVariation(currentColor, 0.25);
+                    drawLED(x, y, colorVar.r, colorVar.g, colorVar.b, Math.max(0.2, brightness));
+                }
+            }
+        }
+
+        // PATTERN 7: Rainbow River - Flowing rainbow stream
+        function drawRainbowRiver() {
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    // Flowing diagonal stream
+                    const stream = Math.sin((x + y) * 0.3 - frame * 0.25);
+                    const ripple = Math.cos(x * 0.4 + frame * 0.15) * 0.3;
+
+                    const brightness = 0.5 + (stream + ripple) * 0.6;
+
+                    // Rainbow hue shift
+                    const hueOffset = ((x + y + frame * 0.5) * 5) % 360;
+                    const rainbowRgb = hsvToRgb(hueOffset / 360, 0.9, 0.9);
+
+                    // Blend with base color
+                    const r = (currentColor.r + rainbowRgb.r * 255) / 2;
+                    const g = (currentColor.g + rainbowRgb.g * 255) / 2;
+                    const b = (currentColor.b + rainbowRgb.b * 255) / 2;
+
+                    drawLED(x, y, r, g, b, brightness);
+                }
+            }
+        }
+
+        // PATTERN 8: Meteor Shower - Falling streaks
+        function drawMeteorShower() {
+            // Background dimmed
+            for (let y = 0; y < MATRIX_SIZE; y++) {
+                for (let x = 0; x < MATRIX_SIZE; x++) {
+                    drawLED(x, y, currentColor.r, currentColor.g, currentColor.b, 0.2);
+                }
+            }
+
+            // Create meteors
+            if (frame % 5 === 0 && Math.random() < 0.3) {
+                meteors.push({
+                    x: Math.random() * MATRIX_SIZE,
+                    y: 0,
+                    speed: 0.3 + Math.random() * 0.4,
+                    brightness: 0.8 + Math.random() * 0.4,
+                    trail: []
+                });
+            }
+
+            // Update and draw meteors
+            for (let i = meteors.length - 1; i >= 0; i--) {
+                const meteor = meteors[i];
+
+                // Add current position to trail
+                meteor.trail.unshift({ x: meteor.x, y: meteor.y });
+                if (meteor.trail.length > 8) meteor.trail.pop();
+
+                // Draw trail
+                for (let j = 0; j < meteor.trail.length; j++) {
+                    const pos = meteor.trail[j];
+                    const trailBrightness = meteor.brightness * (1 - j / meteor.trail.length);
+                    const px = Math.floor(pos.x);
+                    const py = Math.floor(pos.y);
+
+                    if (px >= 0 && px < MATRIX_SIZE && py >= 0 && py < MATRIX_SIZE) {
+                        const colorVar = warmColorVariation(currentColor, 0.2);
+                        drawLED(px, py, colorVar.r * 1.3, colorVar.g * 1.3, colorVar.b * 1.3, trailBrightness);
+                    }
+                }
+
+                // Move meteor
+                meteor.y += meteor.speed;
+                meteor.x += (Math.random() - 0.5) * 0.2; // Slight drift
+
+                // Remove if off screen
+                if (meteor.y > MATRIX_SIZE) {
+                    meteors.splice(i, 1);
                 }
             }
         }
@@ -716,15 +898,18 @@
             ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
             switch (currentPattern) {
-                case 'solid': drawSolid(); break;
-                case 'wave': drawWave(); break;
-                case 'pulse': drawPulse(); break;
-                case 'sparkle': drawSparkle(); break;
+                case 'flowing_waves': drawFlowingWaves(); break;
+                case 'aurora_bands': drawAuroraBands(); break;
+                case 'fire_column': drawFireColumn(); break;
+                case 'breathing': drawBreathing(); break;
+                case 'plasma_storm': drawPlasmaStorm(); break;
+                case 'solar_flare': drawSolarFlare(); break;
+                case 'rainbow_river': drawRainbowRiver(); break;
+                case 'meteor_shower': drawMeteorShower(); break;
             }
 
             frame += animationSpeed;
 
-            // Update countdown
             if (nextUpdateTime) {
                 const secondsUntil = Math.max(0, Math.round((nextUpdateTime - Date.now()) / 1000));
                 document.getElementById('nextUpdate').textContent = `${secondsUntil}s`;
@@ -741,6 +926,7 @@
 
         document.getElementById('pattern').addEventListener('change', (e) => {
             currentPattern = e.target.value;
+            meteors = []; // Reset meteor shower
         });
 
         document.getElementById('speed').addEventListener('input', (e) => {
